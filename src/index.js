@@ -22,7 +22,11 @@ console.log(
 );
 
 for (const destination of destinations) {
-  await destination.notifier.sendStartup(destination.name);
+  try {
+    await destination.notifier.sendStartup(destination.name);
+  } catch (error) {
+    console.error(`Failed to send startup message for ${destination.name}:`, error.message);
+  }
 }
 await checkOnce();
 
@@ -50,8 +54,15 @@ async function checkOnce() {
       }
 
       for (const item of newItems.reverse()) {
-        await destination.notifier.sendItem(item);
-        destination.seenIds.add(item.id);
+        try {
+          await destination.notifier.sendItem(item);
+          destination.seenIds.add(item.id);
+        } catch (error) {
+          console.error(
+            `Failed to send item ${item.id} for ${destination.name}:`,
+            error.message
+          );
+        }
       }
 
       if (newItems.length > 0) {

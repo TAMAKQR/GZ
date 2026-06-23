@@ -1,0 +1,20 @@
+services:
+  - type: worker
+    name: gz
+    runtime: node
+    plan: starter
+    buildCommand: npm ci
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: SCRAPER_MODE
+        value: api
+      - key: API_ROWS
+        value: 100
+      - key: CHECK_INTERVAL_MINUTES
+        value: 10
+      - key: NOTIFY_ONLY_RELEVANT
+        value: true
+      - key: EXCLUDED_STATUSES
+        value: CONTRACT_SIGNED,CANCELLED,CANCELED

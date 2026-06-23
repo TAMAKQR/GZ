@@ -15,6 +15,12 @@ const destinations = await Promise.all(
   }))
 );
 
+console.log(
+  `Starting procurement monitor for ${destinations
+    .map((destination) => destination.name)
+    .join(', ')}. Interval: ${config.checkIntervalMinutes} minutes.`
+);
+
 for (const destination of destinations) {
   await destination.notifier.sendStartup(destination.name);
 }

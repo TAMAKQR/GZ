@@ -68,3 +68,27 @@ ITEM_SELECTOR=tr, .card, [class*="purchase"]
 LINK_SELECTOR=a[href]
 ORDER_LINK_SELECTOR=a[href*="/public/order/view/"]
 ```
+
+## Render
+
+Deploy as a Background Worker.
+
+Build Command:
+
+```bash
+npm ci
+```
+
+Start Command:
+
+```bash
+npm start
+```
+
+Required environment variables:
+
+```env
+TELEGRAM_BOT_TOKEN=...
+ARTO_CHAT_ID=...
+CATERING_CHAT_ID=...
+```

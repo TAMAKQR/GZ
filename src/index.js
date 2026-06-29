@@ -12,7 +12,8 @@ const destinations = await Promise.all(
   config.destinations.map(async (destination) => ({
     ...destination,
     notifier: createNotifier(config.telegramBotToken, destination.chatId),
-    seenIds: await loadSeenItems(destination.dataFile)
+    seenIds: await loadSeenItems(destination.dataFile),
+    initialScanCompleted: false
   }))
 );
 
@@ -48,9 +49,10 @@ async function checkOnce() {
       const items = filterItemsForProfile(allItems, config, destination);
       const newItems = items.filter((item) => !destination.seenIds.has(item.id));
 
-      if (destination.seenIds.size === 0) {
+      if (!destination.initialScanCompleted && destination.seenIds.size === 0) {
         for (const item of items) destination.seenIds.add(item.id);
         await saveSeenItems(destination.dataFile, destination.seenIds);
+        destination.initialScanCompleted = true;
         console.log(
           `Initial scan completed for ${destination.name}. Saved ${items.length} existing items.`
         );

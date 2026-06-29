@@ -1,7 +1,12 @@
 import { config } from './config.js';
+import { formatStatusSummary } from './logging.js';
 import { filterItemsForProfile, scrapeAllItems } from './scraper.js';
 
 const allItems = await scrapeAllItems(config);
+
+console.log(
+  `Parsed ${allItems.length} non-excluded items via ${config.scraperMode}. Statuses: ${formatStatusSummary(allItems)}.`
+);
 
 for (const destination of config.destinations) {
   const items = filterItemsForProfile(allItems, config, destination);

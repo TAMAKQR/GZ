@@ -1,5 +1,6 @@
 import { config, validateConfig } from './config.js';
 import { createNotifier } from './notifier.js';
+import { formatStatusSummary } from './logging.js';
 import { filterItemsForProfile, scrapeAllItems } from './scraper.js';
 import { loadSeenItems, saveSeenItems } from './store.js';
 
@@ -39,6 +40,9 @@ async function checkOnce() {
 
   try {
     const allItems = await scrapeAllItems(config);
+    console.log(
+      `${new Date().toISOString()} Parsed ${allItems.length} non-excluded items via ${config.scraperMode}. Statuses: ${formatStatusSummary(allItems)}.`
+    );
 
     for (const destination of destinations) {
       const items = filterItemsForProfile(allItems, config, destination);

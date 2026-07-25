@@ -1,5 +1,5 @@
 import { Telegraf } from 'telegraf';
-import { scrapeDellaAlmatyLoads } from './dellaScraper.js';
+import { scrapeDellaAlmatyTrucks } from './dellaScraper.js';
 import { scrapeJukterAlmatyLoads } from './jukterScraper.js';
 import { scrapeReisAlmatyLoads } from './reisScraper.js';
 import { scrapeTrafficAlmatyLoads } from './trafficScraper.js';
@@ -25,9 +25,9 @@ export async function startLogisticsMonitor(config) {
 
   const sources = [
     {
-      name: 'DELLA',
+      name: 'DELLA транспорт',
       dataFile: config.dataFile,
-      scrape: () => scrapeDellaAlmatyLoads(config.sourceUrl)
+      scrape: () => scrapeDellaAlmatyTrucks(config.sourceUrl)
     },
     {
       name: 'Júkter',
@@ -124,7 +124,9 @@ export function deduplicateItems(items) {
 
 export function formatLoad(item) {
   return [
-    '<b>Новая заявка на грузоперевозку</b>',
+    item.kind === 'transport'
+      ? '<b>Новый свободный транспорт</b>'
+      : '<b>Новая заявка на грузоперевозку</b>',
     `Источник: ${escapeHtml(item.source || '')}`,
     '',
     `<b>${escapeHtml(item.title)}</b>`,

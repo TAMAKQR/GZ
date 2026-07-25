@@ -23,6 +23,27 @@ export async function scrapeDellaAlmatyLoads(url) {
   );
 }
 
+export async function scrapeDellaAlmatyTrucks(url) {
+  const response = await fetch(url, {
+    headers: {
+      accept: 'text/html,application/xhtml+xml',
+      'accept-language': 'ru-RU,ru;q=0.9',
+      'user-agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+        '(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+    },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+  });
+
+  if (!response.ok) {
+    throw new Error(`DELLA transport request failed with ${response.status}`);
+  }
+
+  return parseDellaTrucks(await response.text(), url).filter(({ route }) =>
+    /(^|[\s,—-])(алматы|алма-ата)(?=\s|\(|,|—|-|$)/i.test(route)
+  );
+}
+
 export function parseDellaLoads(html, sourceUrl) {
   const cards = html.match(
     /<div class="request_card [^"]*"[\s\S]*?(?=<div class="requests_cards_delimiter|$)/g
@@ -75,6 +96,50 @@ export function parseDellaLoads(html, sourceUrl) {
     .filter(Boolean);
 }
 
+export function parseDellaTrucks(html, sourceUrl) {
+  const cards = html.match(
+    /<div class="request_card [^"]*"[\s\S]*?(?=<div class="requests_cards_delimiter|$)/g
+  ) || [];
+
+  return cards
+    .map((card) => {
+      const requestId = attribute(card, 'data-request_id');
+      const route = classElementText(card, 'request_distance');
+      const truckType = classText(card, 'truck_type');
+      if (!requestId || !route || !truckType) return null;
+
+      const date = classText(card, 'date_add');
+      const weight = classText(card, 'weight');
+      const volume = classText(card, 'cube');
+      const rawTemperature = classText(card, 'temperature');
+      const temperature = /^C\s*0$/i.test(rawTemperature) ? '' : rawTemperature;
+      const requestText = classText(card, 'request_text');
+      const tags = classTexts(card, 'tag');
+      const routePath = classAttribute(card, 'request_distance', 'href');
+      const details = [
+        date ? `Свободна: ${date}` : '',
+        `Кузов: ${truckType}`,
+        weight ? `Грузоподъёмность: ${weight}` : '',
+        volume ? `Объём: ${volume}` : '',
+        temperature ? `Температура: ${temperature}` : '',
+        requestText,
+        tags.length ? `Возможности: ${tags.join(', ')}` : ''
+      ].filter(Boolean);
+
+      return {
+        id: createHash('sha256').update(`truck:${requestId}`).digest('hex'),
+        kind: 'transport',
+        source: 'DELLA.kz',
+        title: route,
+        description: details.join('\n'),
+        url: routePath ? new URL(routePath, sourceUrl).toString() : sourceUrl,
+        route,
+        cargo: 'Свободный транспорт'
+      };
+    })
+    .filter(Boolean);
+}
+
 function attribute(html, name) {
   return decodeHtml(html.match(new RegExp(`${name}="([^"]+)"`, 'i'))?.[1] || '');
 }
@@ -85,6 +150,14 @@ function classText(html, className) {
     'i'
   );
   return cleanHtml(html.match(pattern)?.[1] || '');
+}
+
+function classElementText(html, className) {
+  const pattern = new RegExp(
+    `<([a-z][\\w:-]*)[^>]*class="[^"]*\\b${className}\\b[^"]*"[^>]*>([\\s\\S]*?)<\\/\\1>`,
+    'i'
+  );
+  return cleanHtml(html.match(pattern)?.[2] || '');
 }
 
 function classAttribute(html, className, attributeName) {

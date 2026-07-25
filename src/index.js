@@ -3,6 +3,7 @@ import { createNotifier } from './notifier.js';
 import { formatStatusSummary } from './logging.js';
 import { filterItemsForProfile, scrapeAllItems } from './scraper.js';
 import { loadSeenItems, saveSeenItems } from './store.js';
+import { startLogisticsMonitor } from './logisticsMonitor.js';
 
 let isChecking = false;
 
@@ -34,6 +35,12 @@ await checkOnce();
 
 const intervalMs = config.checkIntervalMinutes * 60 * 1000;
 setInterval(checkOnce, intervalMs);
+
+if (config.logistics.botToken && config.logistics.chatId) {
+  await startLogisticsMonitor(config.logistics);
+} else {
+  console.log('Logistics monitor is disabled: LOGISTICS_BOT_TOKEN or LOGISTICS_CHAT_ID is missing.');
+}
 
 async function checkOnce() {
   if (isChecking) return;

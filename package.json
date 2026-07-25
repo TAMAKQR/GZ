@@ -10,7 +10,7 @@
     "start": "node src/index.js",
     "scan": "node src/scan.js",
     "send-current-active": "node src/send-current-active.js",
-    "check": "node --check src/index.js && node --check src/notifier.js && node --check src/scraper.js && node --check src/store.js && node --check src/config.js && node --check src/scan.js && node --check src/relevanceProfiles.js && node --check src/send-current-active.js && node --test"
+    "check": "node --check src/index.js && node --check src/notifier.js && node --check src/scraper.js && node --check src/store.js && node --check src/config.js && node --check src/scan.js && node --check src/relevanceProfiles.js && node --check src/send-current-active.js && node --check src/dellaScraper.js && node --check src/logisticsMonitor.js && node --test"
   },
   "dependencies": {
     "dotenv": "^16.4.7",

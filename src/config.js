@@ -48,6 +48,15 @@ export const config = {
   relevanceProfile: process.env.RELEVANCE_PROFILE || 'catering',
   excludedStatuses,
   notifyOnlyRelevant: boolFromEnv('NOTIFY_ONLY_RELEVANT', true),
+  logistics: {
+    botToken: process.env.LOGISTICS_BOT_TOKEN,
+    chatId: process.env.LOGISTICS_CHAT_ID,
+    sourceUrl:
+      process.env.DELLA_URL ||
+      'https://www.della.kz/search/a98bd98eflolz1z2z3z4z5z6z7z8z9y1y2y3y4y5y6h0ilk0m1.html',
+    checkIntervalMinutes: intFromEnv('LOGISTICS_CHECK_INTERVAL_MINUTES', 2),
+    dataFile: process.env.LOGISTICS_DATA_FILE || 'data/seen-logistics.json'
+  },
   destinations: [
     {
       name: 'Общепит',

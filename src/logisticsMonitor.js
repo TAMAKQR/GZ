@@ -1,6 +1,10 @@
 import { Telegraf } from 'telegraf';
 import { scrapeDellaAlmatyLoads } from './dellaScraper.js';
 import { scrapeJukterAlmatyLoads } from './jukterScraper.js';
+import { scrapeReisAlmatyLoads } from './reisScraper.js';
+import { scrapeTrafficAlmatyLoads } from './trafficScraper.js';
+import { scrapeIfuraAlmatyLoads } from './ifuraScraper.js';
+import { scrapeLogihubAlmatyLoads } from './logihubScraper.js';
 import { loadSeenItems, saveSeenItems } from './store.js';
 
 export async function startLogisticsMonitor(config) {
@@ -13,7 +17,7 @@ export async function startLogisticsMonitor(config) {
   try {
     await bot.telegram.sendMessage(
       config.chatId,
-      'Мониторинг грузов запущен: DELLA.kz и Júkter.kz, маршруты с Алматы.'
+      'Мониторинг грузов запущен: маршруты с Алматы из открытых источников.'
     );
   } catch (error) {
     console.error('Failed to send logistics startup message:', error.message);
@@ -29,6 +33,26 @@ export async function startLogisticsMonitor(config) {
       name: 'Júkter',
       dataFile: config.jukterDataFile,
       scrape: () => scrapeJukterAlmatyLoads(config.jukterUrl)
+    },
+    {
+      name: 'Reis',
+      dataFile: config.reisDataFile,
+      scrape: () => scrapeReisAlmatyLoads(config.reisUrl)
+    },
+    {
+      name: 'Traffic',
+      dataFile: config.trafficDataFile,
+      scrape: () => scrapeTrafficAlmatyLoads(config.trafficUrl)
+    },
+    {
+      name: 'iFura',
+      dataFile: config.ifuraDataFile,
+      scrape: () => scrapeIfuraAlmatyLoads(config.ifuraUrl)
+    },
+    {
+      name: 'LogiHub',
+      dataFile: config.logihubDataFile,
+      scrape: () => scrapeLogihubAlmatyLoads(config.logihubUrl)
     }
   ];
 
@@ -51,6 +75,7 @@ async function startSource(source, bot, config) {
       const newItems = items.filter((item) => !seenIds.has(item.id));
 
       if (!initialScanCompleted && seenIds.size === 0) {
+        seenIds.add('__initialized__');
         for (const item of items) seenIds.add(item.id);
         await saveSeenItems(source.dataFile, seenIds);
         initialScanCompleted = true;

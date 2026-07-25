@@ -55,9 +55,19 @@ export const config = {
       process.env.DELLA_URL ||
       'https://www.della.kz/search/a98bd98eflolz1z2z3z4z5z6z7z8z9y1y2y3y4y5y6h0ilk0m1.html',
     jukterUrl: process.env.JUKTER_URL || 'https://jukter.kz/orders?type_id=1',
+    reisUrl: process.env.REIS_URL || 'https://reis.kz/cargo/search',
+    trafficUrl:
+      process.env.TRAFFIC_URL ||
+      'https://api.traffic.com.kz/api/v2/cargo?category_id=1&page=1',
+    ifuraUrl: process.env.IFURA_URL || 'https://ifura.kz/',
+    logihubUrl: process.env.LOGIHUB_URL || 'https://logihub.kz/',
     checkIntervalMinutes: intFromEnv('LOGISTICS_CHECK_INTERVAL_MINUTES', 2),
     dataFile: process.env.LOGISTICS_DATA_FILE || 'data/seen-logistics.json',
-    jukterDataFile: process.env.JUKTER_DATA_FILE || 'data/seen-jukter.json'
+    jukterDataFile: process.env.JUKTER_DATA_FILE || 'data/seen-jukter.json',
+    reisDataFile: process.env.REIS_DATA_FILE || 'data/seen-reis.json',
+    trafficDataFile: process.env.TRAFFIC_DATA_FILE || 'data/seen-traffic.json',
+    ifuraDataFile: process.env.IFURA_DATA_FILE || 'data/seen-ifura.json',
+    logihubDataFile: process.env.LOGIHUB_DATA_FILE || 'data/seen-logihub.json'
   },
   destinations: [
     {

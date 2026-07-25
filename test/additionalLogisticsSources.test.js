@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { parseTrafficLoads } from '../src/trafficScraper.js';
 import { parseIfuraLoads } from '../src/ifuraScraper.js';
 import { parseLogihubLoads } from '../src/logihubScraper.js';
+import { deduplicateItems } from '../src/logisticsMonitor.js';
 
 test('parses Traffic API loads', () => {
   const [item] = parseTrafficLoads({ data: [{ id: 1, title: 'тент мебель', details: { from_string: 'Алматы KZ', to_string: 'Астана KZ', distance: '1200 км' }, price: { price: '500000 тенге' }, author: { phone: '+7700' } }] });
@@ -20,4 +21,12 @@ test('parses iFura cards', () => {
 test('parses LogiHub cards', () => {
   const html = '<div class="hero-request-item"><a href="/cargo/almaty-astana">Алматы, Казахстан → Астана, Казахстан</a><span class="hero-request-tag hero-request-tag--weight">20 000 кг</span><span class="hero-request-tag hero-request-tag--cargo">Оборудование</span></div></div></div><div class="hero-trust">';
   assert.equal(parseLogihubLoads(html, 'https://logihub.kz/')[0].cargo, 'Оборудование');
+});
+
+test('removes duplicate logistics listings before sending', () => {
+  const first = { id: 'same-id', title: 'Алматы — Астана' };
+  const duplicate = { id: 'same-id', title: 'Алматы — Астана' };
+  const other = { id: 'other-id', title: 'Алматы — Шымкент' };
+
+  assert.deepEqual(deduplicateItems([first, duplicate, other]), [duplicate, other]);
 });

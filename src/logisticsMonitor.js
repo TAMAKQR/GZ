@@ -71,7 +71,8 @@ async function startSource(source, bot, config) {
     isChecking = true;
 
     try {
-      const items = await source.scrape();
+      const scrapedItems = await source.scrape();
+      const items = deduplicateItems(scrapedItems);
       const newItems = items.filter((item) => !seenIds.has(item.id));
 
       if (!initialScanCompleted && seenIds.size === 0) {
@@ -87,6 +88,8 @@ async function startSource(source, bot, config) {
 
       let sentCount = 0;
       for (const item of newItems.reverse()) {
+        if (seenIds.has(item.id)) continue;
+
         try {
           await bot.telegram.sendMessage(config.chatId, formatLoad(item), {
             parse_mode: 'HTML',
@@ -113,6 +116,10 @@ async function startSource(source, bot, config) {
 
   await checkOnce();
   setInterval(checkOnce, config.checkIntervalMinutes * 60 * 1000);
+}
+
+export function deduplicateItems(items) {
+  return [...new Map(items.map((item) => [item.id, item])).values()];
 }
 
 export function formatLoad(item) {

@@ -49,7 +49,7 @@ export const config = {
   excludedStatuses,
   notifyOnlyRelevant: boolFromEnv('NOTIFY_ONLY_RELEVANT', true),
   logistics: {
-    botToken: process.env.LOGISTICS_BOT_TOKEN,
+    botToken: process.env.TELEGRAM_BOT_TOKEN,
     chatId: process.env.LOGISTICS_CHAT_ID,
     sourceUrl:
       process.env.DELLA_URL ||

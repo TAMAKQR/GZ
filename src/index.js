@@ -39,7 +39,7 @@ setInterval(checkOnce, intervalMs);
 if (config.logistics.botToken && config.logistics.chatId) {
   await startLogisticsMonitor(config.logistics);
 } else {
-  console.log('Logistics monitor is disabled: LOGISTICS_BOT_TOKEN or LOGISTICS_CHAT_ID is missing.');
+  console.log('Logistics monitor is disabled: TELEGRAM_BOT_TOKEN or LOGISTICS_CHAT_ID is missing.');
 }
 
 async function checkOnce() {

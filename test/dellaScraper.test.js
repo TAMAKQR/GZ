@@ -9,7 +9,7 @@ const card = (id, from, to, cargo) => `
     <div class="weight">20 т</div>
     <div class="cube">86 м³</div>
     <div class="request_route">
-      <a class="request_distance"><span class="locality">${from}</span> (KZ)
+      <a class="request_distance" href="/distance/?cities=127269,25452&rc=${id}"><span class="locality">${from}</span> (KZ)
       &mdash; <span class="locality">${to}</span> (KZ)</a>
       <a class="distance">700 км</a>
     </div>
@@ -29,4 +29,8 @@ test('parses public DELLA load cards', () => {
   assert.equal(items[0].route, 'Алматы (KZ) — Шымкент (KZ)');
   assert.equal(items[0].cargo, 'оборудование');
   assert.match(items[0].description, /Транспорт: тент/);
+  assert.equal(
+    items[0].url,
+    'https://www.della.kz/distance/?cities=127269,25452&rc=one'
+  );
 });

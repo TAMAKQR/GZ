@@ -50,6 +50,7 @@ export function parseDellaLoads(html, sourceUrl) {
         'price_per_distance'
       ]);
       const tags = classTexts(card, 'tag');
+      const routePath = classAttribute(card, 'request_distance', 'href');
       const details = [
         date ? `Дата загрузки: ${date}` : '',
         cargo ? `Груз: ${cargo}` : '',
@@ -66,7 +67,7 @@ export function parseDellaLoads(html, sourceUrl) {
         source: 'DELLA.kz',
         title: route,
         description: details.join('\n'),
-        url: sourceUrl,
+        url: routePath ? new URL(routePath, sourceUrl).toString() : sourceUrl,
         route,
         cargo
       };
@@ -84,6 +85,13 @@ function classText(html, className) {
     'i'
   );
   return cleanHtml(html.match(pattern)?.[1] || '');
+}
+
+function classAttribute(html, className, attributeName) {
+  const tag = html.match(
+    new RegExp(`<[^>]+class="[^"]*\\b${className}\\b[^"]*"[^>]*>`, 'i')
+  )?.[0];
+  return tag ? attribute(tag, attributeName) : '';
 }
 
 function firstClassText(html, classNames) {

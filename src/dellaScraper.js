@@ -63,6 +63,7 @@ export function parseDellaLoads(html, sourceUrl) {
 
       return {
         id: createHash('sha256').update(requestId).digest('hex'),
+        source: 'DELLA.kz',
         title: route,
         description: details.join('\n'),
         url: sourceUrl,

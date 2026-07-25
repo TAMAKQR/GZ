@@ -54,8 +54,10 @@ export const config = {
     sourceUrl:
       process.env.DELLA_URL ||
       'https://www.della.kz/search/a98bd98eflolz1z2z3z4z5z6z7z8z9y1y2y3y4y5y6h0ilk0m1.html',
+    jukterUrl: process.env.JUKTER_URL || 'https://jukter.kz/orders?type_id=1',
     checkIntervalMinutes: intFromEnv('LOGISTICS_CHECK_INTERVAL_MINUTES', 2),
-    dataFile: process.env.LOGISTICS_DATA_FILE || 'data/seen-logistics.json'
+    dataFile: process.env.LOGISTICS_DATA_FILE || 'data/seen-logistics.json',
+    jukterDataFile: process.env.JUKTER_DATA_FILE || 'data/seen-jukter.json'
   },
   destinations: [
     {

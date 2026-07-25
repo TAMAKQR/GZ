@@ -1,39 +1,62 @@
 import { Telegraf } from 'telegraf';
 import { scrapeDellaAlmatyLoads } from './dellaScraper.js';
+import { scrapeJukterAlmatyLoads } from './jukterScraper.js';
 import { loadSeenItems, saveSeenItems } from './store.js';
 
 export async function startLogisticsMonitor(config) {
   const bot = new Telegraf(config.botToken);
-  const seenIds = await loadSeenItems(config.dataFile);
-  let initialScanCompleted = false;
-  let isChecking = false;
 
   console.log(
-    `Starting DELLA logistics monitor for Almaty. Interval: ${config.checkIntervalMinutes} minutes.`
+    `Starting logistics monitor for Almaty. Interval: ${config.checkIntervalMinutes} minutes.`
   );
 
   try {
     await bot.telegram.sendMessage(
       config.chatId,
-      'Мониторинг грузов DELLA.kz запущен: маршруты с Алматы.'
+      'Мониторинг грузов запущен: DELLA.kz и Júkter.kz, маршруты с Алматы.'
     );
   } catch (error) {
     console.error('Failed to send logistics startup message:', error.message);
   }
+
+  const sources = [
+    {
+      name: 'DELLA',
+      dataFile: config.dataFile,
+      scrape: () => scrapeDellaAlmatyLoads(config.sourceUrl)
+    },
+    {
+      name: 'Júkter',
+      dataFile: config.jukterDataFile,
+      scrape: () => scrapeJukterAlmatyLoads(config.jukterUrl)
+    }
+  ];
+
+  for (const source of sources) {
+    await startSource(source, bot, config);
+  }
+}
+
+async function startSource(source, bot, config) {
+  const seenIds = await loadSeenItems(source.dataFile);
+  let initialScanCompleted = false;
+  let isChecking = false;
 
   const checkOnce = async () => {
     if (isChecking) return;
     isChecking = true;
 
     try {
-      const items = await scrapeDellaAlmatyLoads(config.sourceUrl);
+      const items = await source.scrape();
       const newItems = items.filter((item) => !seenIds.has(item.id));
 
       if (!initialScanCompleted && seenIds.size === 0) {
         for (const item of items) seenIds.add(item.id);
-        await saveSeenItems(config.dataFile, seenIds);
+        await saveSeenItems(source.dataFile, seenIds);
         initialScanCompleted = true;
-        console.log(`Initial DELLA scan completed. Saved ${items.length} Almaty loads.`);
+        console.log(
+          `Initial ${source.name} scan completed. Saved ${items.length} Almaty loads.`
+        );
         return;
       }
 
@@ -47,17 +70,17 @@ export async function startLogisticsMonitor(config) {
           seenIds.add(item.id);
           sentCount += 1;
         } catch (error) {
-          console.error(`Failed to send DELLA load ${item.id}:`, error.message);
+          console.error(`Failed to send ${source.name} load ${item.id}:`, error.message);
         }
       }
 
-      if (sentCount > 0) await saveSeenItems(config.dataFile, seenIds);
+      if (sentCount > 0) await saveSeenItems(source.dataFile, seenIds);
       initialScanCompleted = true;
       console.log(
-        `${new Date().toISOString()} DELLA Almaty: checked ${items.length}, sent: ${sentCount}.`
+        `${new Date().toISOString()} ${source.name} Almaty: checked ${items.length}, sent: ${sentCount}.`
       );
     } catch (error) {
-      console.error(`${new Date().toISOString()} DELLA check failed:`, error.message);
+      console.error(`${new Date().toISOString()} ${source.name} check failed:`, error.message);
     } finally {
       isChecking = false;
     }
@@ -70,11 +93,12 @@ export async function startLogisticsMonitor(config) {
 export function formatLoad(item) {
   return [
     '<b>Новая заявка на грузоперевозку</b>',
+    `Источник: ${escapeHtml(item.source || '')}`,
     '',
     `<b>${escapeHtml(item.title)}</b>`,
     escapeHtml(item.description),
     '',
-    `<a href="${escapeHtml(item.url)}">Открыть список грузов DELLA.kz</a>`
+    `<a href="${escapeHtml(item.url)}">Открыть заявку</a>`
   ]
     .filter(Boolean)
     .join('\n');

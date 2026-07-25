@@ -1,7 +1,11 @@
 export async function scrapeTrafficAlmatyLoads(url) {
+  return (await scrapeTrafficLoads(url)).filter(({ route }) => hasAlmaty(route));
+}
+
+export async function scrapeTrafficLoads(url) {
   const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
   if (!response.ok) throw new Error(`Traffic request failed with ${response.status}`);
-  return parseTrafficLoads(await response.json()).filter(({ route }) => hasAlmaty(route));
+  return parseTrafficLoads(await response.json());
 }
 
 export function parseTrafficLoads(payload) {

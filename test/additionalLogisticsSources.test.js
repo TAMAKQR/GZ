@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import { parseTrafficLoads } from '../src/trafficScraper.js';
 import { parseIfuraLoads } from '../src/ifuraScraper.js';
 import { parseLogihubLoads } from '../src/logihubScraper.js';
-import { deduplicateItems } from '../src/logisticsMonitor.js';
+import {
+  buildAlternatingQueue,
+  deduplicateItems
+} from '../src/logisticsMonitor.js';
 
 test('parses Traffic API loads', () => {
   const [item] = parseTrafficLoads({ data: [{ id: 1, title: 'тент мебель', details: { from_string: 'Алматы KZ', to_string: 'Астана KZ', distance: '1200 км' }, price: { price: '500000 тенге' }, author: { phone: '+7700' } }] });
@@ -29,4 +32,14 @@ test('removes duplicate logistics listings before sending', () => {
   const other = { id: 'other-id', title: 'Алматы — Шымкент' };
 
   assert.deepEqual(deduplicateItems([first, duplicate, other]), [duplicate, other]);
+});
+
+test('alternates Kazakhstan orders and available transport without leftovers', () => {
+  const orders = [{ item: { id: 'order-1' } }, { item: { id: 'order-2' } }];
+  const transport = [{ item: { id: 'truck-1' } }];
+
+  assert.deepEqual(
+    buildAlternatingQueue(orders, transport).map((entry) => entry.item.id),
+    ['order-1', 'truck-1']
+  );
 });

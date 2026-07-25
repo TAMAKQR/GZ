@@ -63,12 +63,15 @@ export const config = {
     logihubUrl: process.env.LOGIHUB_URL || 'https://logihub.kz/',
     checkIntervalMinutes: intFromEnv('LOGISTICS_CHECK_INTERVAL_MINUTES', 2),
     dataFile:
-      process.env.DELLA_TRANSPORT_DATA_FILE || 'data/seen-della-transport.json',
-    jukterDataFile: process.env.JUKTER_DATA_FILE || 'data/seen-jukter.json',
-    reisDataFile: process.env.REIS_DATA_FILE || 'data/seen-reis.json',
-    trafficDataFile: process.env.TRAFFIC_DATA_FILE || 'data/seen-traffic.json',
-    ifuraDataFile: process.env.IFURA_DATA_FILE || 'data/seen-ifura.json',
-    logihubDataFile: process.env.LOGIHUB_DATA_FILE || 'data/seen-logihub.json'
+      process.env.KZ_DELLA_TRANSPORT_DATA_FILE || 'data/seen-kz-della-transport.json',
+    jukterDataFile:
+      process.env.KZ_JUKTER_DATA_FILE || 'data/seen-kz-jukter.json',
+    reisDataFile: process.env.KZ_REIS_DATA_FILE || 'data/seen-kz-reis.json',
+    trafficDataFile:
+      process.env.KZ_TRAFFIC_DATA_FILE || 'data/seen-kz-traffic.json',
+    ifuraDataFile: process.env.KZ_IFURA_DATA_FILE || 'data/seen-kz-ifura.json',
+    logihubDataFile:
+      process.env.KZ_LOGIHUB_DATA_FILE || 'data/seen-kz-logihub.json'
   },
   destinations: [
     {

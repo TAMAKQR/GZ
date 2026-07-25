@@ -1,9 +1,13 @@
 export async function scrapeIfuraAlmatyLoads(url) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
-  if (!response.ok) throw new Error(`iFura request failed with ${response.status}`);
-  return parseIfuraLoads(await response.text(), url).filter(({ route }) =>
+  return (await scrapeIfuraLoads(url)).filter(({ route }) =>
     /(^|[\s—-])(алматы|алма-ата)(?=\s|—|-|$)/i.test(route)
   );
+}
+
+export async function scrapeIfuraLoads(url) {
+  const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
+  if (!response.ok) throw new Error(`iFura request failed with ${response.status}`);
+  return parseIfuraLoads(await response.text(), url);
 }
 
 export function parseIfuraLoads(html, baseUrl) {

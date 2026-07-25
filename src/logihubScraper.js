@@ -1,9 +1,13 @@
 export async function scrapeLogihubAlmatyLoads(url) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
-  if (!response.ok) throw new Error(`LogiHub request failed with ${response.status}`);
-  return parseLogihubLoads(await response.text(), url).filter(({ route }) =>
+  return (await scrapeLogihubLoads(url)).filter(({ route }) =>
     /(^|[\s,—-])(алматы|алма-ата)(?=\s|,|—|-|$)/i.test(route)
   );
+}
+
+export async function scrapeLogihubLoads(url) {
+  const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
+  if (!response.ok) throw new Error(`LogiHub request failed with ${response.status}`);
+  return parseLogihubLoads(await response.text(), url);
 }
 
 export function parseLogihubLoads(html, baseUrl) {

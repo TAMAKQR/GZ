@@ -1,4 +1,10 @@
 export async function scrapeJukterAlmatyLoads(url) {
+  return (await scrapeJukterLoads(url)).filter(({ route }) =>
+    /(^|[\s—-])(алматы|алма-ата)(?=\s|\(|—|-|$)/i.test(route)
+  );
+}
+
+export async function scrapeJukterLoads(url) {
   const response = await fetch(url, {
     headers: {
       accept: 'text/html,application/xhtml+xml',
@@ -14,9 +20,7 @@ export async function scrapeJukterAlmatyLoads(url) {
     throw new Error(`Júkter request failed with ${response.status}`);
   }
 
-  return parseJukterLoads(await response.text()).filter(({ route }) =>
-    /(^|[\s—-])(алматы|алма-ата)(?=\s|\(|—|-|$)/i.test(route)
-  );
+  return parseJukterLoads(await response.text());
 }
 
 export function parseJukterLoads(html) {

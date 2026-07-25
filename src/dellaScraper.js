@@ -24,6 +24,12 @@ export async function scrapeDellaAlmatyLoads(url) {
 }
 
 export async function scrapeDellaAlmatyTrucks(url) {
+  return (await scrapeDellaTrucks(url)).filter(({ route }) =>
+    /(^|[\s,—-])(алматы|алма-ата)(?=\s|\(|,|—|-|$)/i.test(route)
+  );
+}
+
+export async function scrapeDellaTrucks(url) {
   const response = await fetch(url, {
     headers: {
       accept: 'text/html,application/xhtml+xml',
@@ -39,9 +45,7 @@ export async function scrapeDellaAlmatyTrucks(url) {
     throw new Error(`DELLA transport request failed with ${response.status}`);
   }
 
-  return parseDellaTrucks(await response.text(), url).filter(({ route }) =>
-    /(^|[\s,—-])(алматы|алма-ата)(?=\s|\(|,|—|-|$)/i.test(route)
-  );
+  return parseDellaTrucks(await response.text(), url);
 }
 
 export function parseDellaLoads(html, sourceUrl) {

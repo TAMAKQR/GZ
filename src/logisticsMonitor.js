@@ -1,23 +1,23 @@
 import { Telegraf } from 'telegraf';
-import { scrapeDellaAlmatyTrucks } from './dellaScraper.js';
-import { scrapeJukterAlmatyLoads } from './jukterScraper.js';
-import { scrapeReisAlmatyLoads } from './reisScraper.js';
-import { scrapeTrafficAlmatyLoads } from './trafficScraper.js';
-import { scrapeIfuraAlmatyLoads } from './ifuraScraper.js';
-import { scrapeLogihubAlmatyLoads } from './logihubScraper.js';
+import { scrapeDellaTrucks } from './dellaScraper.js';
+import { scrapeJukterLoads } from './jukterScraper.js';
+import { scrapeReisLoads } from './reisScraper.js';
+import { scrapeTrafficLoads } from './trafficScraper.js';
+import { scrapeIfuraLoads } from './ifuraScraper.js';
+import { scrapeLogihubLoads } from './logihubScraper.js';
 import { loadSeenItems, saveSeenItems } from './store.js';
 
 export async function startLogisticsMonitor(config) {
   const bot = new Telegraf(config.botToken);
 
   console.log(
-    `Starting logistics monitor for Almaty. Interval: ${config.checkIntervalMinutes} minutes.`
+    `Starting Kazakhstan logistics monitor. Interval: ${config.checkIntervalMinutes} minutes.`
   );
 
   try {
     await bot.telegram.sendMessage(
       config.chatId,
-      'Мониторинг грузов запущен: маршруты с Алматы из открытых источников.'
+      'Мониторинг Казахстана запущен: по очереди отправляются новый груз и свободный транспорт.'
     );
   } catch (error) {
     console.error('Failed to send logistics startup message:', error.message);
@@ -26,96 +26,127 @@ export async function startLogisticsMonitor(config) {
   const sources = [
     {
       name: 'DELLA транспорт',
+      kind: 'transport',
       dataFile: config.dataFile,
-      scrape: () => scrapeDellaAlmatyTrucks(config.sourceUrl)
+      scrape: () => scrapeDellaTrucks(config.sourceUrl)
     },
     {
       name: 'Júkter',
+      kind: 'order',
       dataFile: config.jukterDataFile,
-      scrape: () => scrapeJukterAlmatyLoads(config.jukterUrl)
+      scrape: () => scrapeJukterLoads(config.jukterUrl)
     },
     {
       name: 'Reis',
+      kind: 'order',
       dataFile: config.reisDataFile,
-      scrape: () => scrapeReisAlmatyLoads(config.reisUrl)
+      scrape: () => scrapeReisLoads(config.reisUrl)
     },
     {
       name: 'Traffic',
+      kind: 'order',
       dataFile: config.trafficDataFile,
-      scrape: () => scrapeTrafficAlmatyLoads(config.trafficUrl)
+      scrape: () => scrapeTrafficLoads(config.trafficUrl)
     },
     {
       name: 'iFura',
+      kind: 'order',
       dataFile: config.ifuraDataFile,
-      scrape: () => scrapeIfuraAlmatyLoads(config.ifuraUrl)
+      scrape: () => scrapeIfuraLoads(config.ifuraUrl)
     },
     {
       name: 'LogiHub',
+      kind: 'order',
       dataFile: config.logihubDataFile,
-      scrape: () => scrapeLogihubAlmatyLoads(config.logihubUrl)
+      scrape: () => scrapeLogihubLoads(config.logihubUrl)
     }
   ];
 
   for (const source of sources) {
-    await startSource(source, bot, config);
+    source.seenIds = await loadSeenItems(source.dataFile);
+    source.initialized = false;
   }
-}
-
-async function startSource(source, bot, config) {
-  const seenIds = await loadSeenItems(source.dataFile);
-  let initialScanCompleted = false;
-  let isChecking = false;
 
   const checkOnce = async () => {
-    if (isChecking) return;
-    isChecking = true;
+    if (checkOnce.running) return;
+    checkOnce.running = true;
 
     try {
-      const scrapedItems = await source.scrape();
-      const items = deduplicateItems(scrapedItems);
-      const newItems = items.filter((item) => !seenIds.has(item.id));
+      const pending = { order: [], transport: [] };
 
-      if (!initialScanCompleted && seenIds.size === 0) {
-        seenIds.add('__initialized__');
-        for (const item of items) seenIds.add(item.id);
-        await saveSeenItems(source.dataFile, seenIds);
-        initialScanCompleted = true;
-        console.log(
-          `Initial ${source.name} scan completed. Saved ${items.length} Almaty loads.`
-        );
-        return;
-      }
-
-      let sentCount = 0;
-      for (const item of newItems.reverse()) {
-        if (seenIds.has(item.id)) continue;
-
+      for (const source of sources) {
         try {
-          await bot.telegram.sendMessage(config.chatId, formatLoad(item), {
-            parse_mode: 'HTML',
-            disable_web_page_preview: true
-          });
-          seenIds.add(item.id);
-          sentCount += 1;
+          const items = deduplicateItems(await source.scrape());
+
+          if (!source.initialized && source.seenIds.size === 0) {
+            source.seenIds.add('__initialized__');
+            for (const item of items) source.seenIds.add(item.id);
+            await saveSeenItems(source.dataFile, source.seenIds);
+            source.initialized = true;
+            console.log(
+              `Initial ${source.name} scan completed. Saved ${items.length} Kazakhstan items.`
+            );
+            continue;
+          }
+
+          source.initialized = true;
+          for (const item of items) {
+            if (!source.seenIds.has(item.id)) pending[source.kind].push({ item, source });
+          }
         } catch (error) {
-          console.error(`Failed to send ${source.name} load ${item.id}:`, error.message);
+          console.error(`${new Date().toISOString()} ${source.name} check failed:`, error.message);
         }
       }
 
-      if (sentCount > 0) await saveSeenItems(source.dataFile, seenIds);
-      initialScanCompleted = true;
+      const queue = buildAlternatingQueue(
+        pending.order.reverse(),
+        pending.transport.reverse()
+      );
+      const changedSources = new Set();
+
+      for (const entry of queue) {
+        try {
+          await bot.telegram.sendMessage(config.chatId, formatLoad(entry.item), {
+            parse_mode: 'HTML',
+            disable_web_page_preview: true
+          });
+          entry.source.seenIds.add(entry.item.id);
+          changedSources.add(entry.source);
+        } catch (error) {
+          console.error(
+            `Failed to send ${entry.source.name} item ${entry.item.id}:`,
+            error.message
+          );
+          break;
+        }
+      }
+
+      for (const source of changedSources) {
+        await saveSeenItems(source.dataFile, source.seenIds);
+      }
+
       console.log(
-        `${new Date().toISOString()} ${source.name} Almaty: checked ${items.length}, sent: ${sentCount}.`
+        `${new Date().toISOString()} Kazakhstan logistics: pending orders ${pending.order.length}, ` +
+          `transport ${pending.transport.length}, sent ${queue.length}.`
       );
     } catch (error) {
-      console.error(`${new Date().toISOString()} ${source.name} check failed:`, error.message);
+      console.error(`${new Date().toISOString()} Kazakhstan logistics cycle failed:`, error.message);
     } finally {
-      isChecking = false;
+      checkOnce.running = false;
     }
   };
 
   await checkOnce();
   setInterval(checkOnce, config.checkIntervalMinutes * 60 * 1000);
+}
+
+export function buildAlternatingQueue(orders, transport) {
+  const queue = [];
+  const pairCount = Math.min(orders.length, transport.length);
+  for (let index = 0; index < pairCount; index += 1) {
+    queue.push(orders[index], transport[index]);
+  }
+  return queue;
 }
 
 export function deduplicateItems(items) {
@@ -132,7 +163,9 @@ export function formatLoad(item) {
     `<b>${escapeHtml(item.title)}</b>`,
     escapeHtml(item.description),
     '',
-    `<a href="${escapeHtml(item.url)}">Открыть заявку</a>`
+    `<a href="${escapeHtml(item.url)}">${
+      item.kind === 'transport' ? 'Открыть транспорт' : 'Открыть заявку'
+    }</a>`
   ]
     .filter(Boolean)
     .join('\n');

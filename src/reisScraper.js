@@ -1,4 +1,10 @@
 export async function scrapeReisAlmatyLoads(url) {
+  return (await scrapeReisLoads(url)).filter(({ route }) =>
+    /(^|[\s—-])(алматы|алма-ата)(?=\s|—|-|$)/i.test(route)
+  );
+}
+
+export async function scrapeReisLoads(url) {
   const response = await fetch(url, {
     headers: {
       accept: 'text/html,application/xhtml+xml',
@@ -14,10 +20,7 @@ export async function scrapeReisAlmatyLoads(url) {
     throw new Error(`Reis request failed with ${response.status}`);
   }
 
-  return parseReisLoads(await response.text()).filter(
-    ({ route, externalSource }) =>
-      /(^|[\s—-])(алматы|алма-ата)(?=\s|—|-|$)/i.test(route) && !externalSource
-  );
+  return parseReisLoads(await response.text()).filter(({ externalSource }) => !externalSource);
 }
 
 export function parseReisLoads(html) {
